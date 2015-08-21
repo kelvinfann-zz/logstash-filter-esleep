@@ -60,23 +60,29 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
     @elapsed_time = Atomic.new(0.0)
     @check_time = @timelimit != 0
     @timelimit = @timelimit
+    @sleep_on_time = false
   end # def register
 
   public
   def filter(event)
     return unless filter?(event)
     @count.update {|v| v + 1 }
-    if @count.value >= @every
+    if @count.value >= @every || @sleep_on_time
       start_sleep(event)
     end
     filter_matched(event)
   end # def filter
 
   public
+  def periodic_flush
+    true
+  end
+
+  public
   def flush(options = {})
     @elapsed_time.update {|v| v + 5}
     if @timelimit >= @elapsed_time.value && @check_time
-      start_sleep(event)
+      @sleep_on_time = true
     end
     return
   end
@@ -88,6 +94,7 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
       when nil;
       else; sleeptime = event.sprintf(@sleeptime).to_f
     end
+    @sleep_on_time = false
     @elapsed_time.update { |v| 0 } 
     @count.update { |v| 0 }
     @logger.debug? && @logger.debug("Sleeping", :delay => sleeptime)
