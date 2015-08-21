@@ -58,7 +58,7 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
     require "atomic"
     @count = Atomic.new(0)
     @elapsed_time = Atomic.new(0.0)
-    @check_time = @timelimit == 0
+    @check_time = @timelimit != 0
     @timelimit = @timelimit
   end # def register
 
