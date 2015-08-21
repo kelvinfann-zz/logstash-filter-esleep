@@ -81,7 +81,7 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
   public
   def flush(options = {})
     @elapsed_time.update {|v| v + 5}
-    if @timelimit >= @elapsed_time.value && @check_time
+    if @timelimit <= @elapsed_time.value && @check_time
       @sleep_on_time = true
     end
     return
