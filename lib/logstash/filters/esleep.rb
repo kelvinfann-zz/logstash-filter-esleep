@@ -24,7 +24,7 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
   #         sleeptime => "1"
   #       }
   #     }
-  config :sleeptime, :validate => :string
+  config :sleeptime, :validate => :number
 
   # Sleep on every N'th. This option is ignored in replay mode.
   #
@@ -60,15 +60,14 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
     @elapsed_time = Atomic.new(0.0)
     @check_time = @timelimit != 0
     @timelimit = @timelimit
-    @sleep_on_time = false
   end # def register
 
   public
   def filter(event)
     return unless filter?(event)
     @count.update {|v| v + 1 }
-    if @count.value >= @every || @sleep_on_time
-      start_sleep(event)
+    if @count.value >= @every
+      start_sleep
     end
     filter_matched(event)
   end # def filter
@@ -82,18 +81,14 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
   def flush(options = {})
     @elapsed_time.update {|v| v + 5}
     if @timelimit <= @elapsed_time.value && @check_time
-      @sleep_on_time = true
+      start_sleep
     end
     return
   end
 
-  def start_sleep(event)
+  def start_sleep
     # This case statement is legacy from the original sleep code
-    case @sleeptime
-      when Fixnum, Float; sleeptime = @sleeptime
-      when nil;
-      else; sleeptime = event.sprintf(@sleeptime).to_f
-    end
+    sleeptime = @sleeptime
     @sleep_on_time = false
     @elapsed_time.update { |v| 0 } 
     @count.update { |v| 0 }
