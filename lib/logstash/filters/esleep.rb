@@ -60,7 +60,7 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
     @elapsed_time = Atomic.new(0)
     @check_time = (@timelimit != 0)
     @timelimit = @timelimit
-    @last_time = Time.now.utc.to_s
+    @last_time = Time.now.utc.to_i
   end # def register
 
   public
@@ -80,7 +80,7 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
 
   public
   def flush(options = {})
-    curr_time = Time.now.utc.to_s
+    curr_time = Time.now.utc.to_i
     @elapsed_time.update {|v| v + (curr_time - @last_time)}
     @last_time = curr_time
     if @timelimit <= @elapsed_time.value && @check_time
@@ -91,11 +91,11 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
 
   def start_sleep
     # This case statement is legacy from the original sleep code
-    sleeptime = @sleeptime
     @sleep_on_time = false
     @elapsed_time.update { |v| 0 } 
+    @last_time += @sleeptime
     @count.update { |v| 0 }
-    @logger.debug? && @logger.debug("Sleeping", :delay => sleeptime)
-    sleep(sleeptime)
+    @logger.debug? && @logger.debug("Sleeping", :delay => @sleeptime)
+    sleep(@sleeptime)
   end # reset
 end # class LogStash::Filters::Sleep
