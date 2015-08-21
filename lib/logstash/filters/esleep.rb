@@ -19,12 +19,12 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
   # Example:
   # [source,ruby]
   #     filter {
-  #       sleep {
+  #       esleep {
   #         # Sleep 1 second for every event.
   #         sleeptime => "1"
   #       }
   #     }
-  config :sleeptime, :validate => :number
+  config :sleeptime, :validate => :number, :default => 1
 
   # Sleep on every N'th. This option is ignored in replay mode.
   #
@@ -53,6 +53,7 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
   #     }
   config :timelimit, :validate => :number, :default => 0
 
+  # Initialization of the plugin
   public
   def register
     require "atomic"
@@ -63,6 +64,7 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
     @last_time = Time.now.utc.to_i
   end # def register
 
+  # counts the number of messages that came through
   public
   def filter(event)
     return unless filter?(event)
@@ -73,11 +75,13 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
     filter_matched(event)
   end # def filter
 
+  # uses flush to periodically check time so flush must be on
   public
   def periodic_flush
     true
-  end
+  end # periodic_flush
 
+  # Checks the time to see if the process has timedout, thus forcing a sleep
   public
   def flush(options = {})
     curr_time = Time.now.utc.to_i
@@ -87,8 +91,9 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
       start_sleep
     end
     return
-  end
+  end # flush
 
+  # The actual sleep function. Resets all counters and timers
   def start_sleep
     # This case statement is legacy from the original sleep code
     @sleep_on_time = false
@@ -97,5 +102,5 @@ class LogStash::Filters::Esleep < LogStash::Filters::Base
     @count.update { |v| 0 }
     @logger.debug? && @logger.debug("Sleeping", :delay => @sleeptime)
     sleep(@sleeptime)
-  end # reset
-end # class LogStash::Filters::Sleep
+  end # start_sleep
+end # class LogStash::Filters::esleep
